@@ -11,12 +11,17 @@ def single_import_edf(path):
     sample_rate = signal_headers[0]['sample_rate']
     return signals,n_channels,n_samples,sample_rate
 
-def import_edf(paths):
+def import_edf(paths,loading_label,app):
     all_signals = []
+    durasi = 0
+    penambahan_durasi = 50.0/len(paths)
+    
     for path in paths:
-        print(path)
+        durasi += penambahan_durasi
         signals, signal_headers, header = highlevel.read_edf(path)
         all_signals.append(signals)
+        loading_label.configure(text=f"Loading... {durasi:.0f}%")
+        app.update()
     return all_signals
 
 def avg_signal(signals):
@@ -40,11 +45,12 @@ def avg_signal_reff(signals,n_channels,n_samples):
     return averaged_signal 
 
 def filtering(data,fs , lowcut=0.5, highcut=40.0):
-    lowcut = lowcut  # Hz (desired lower cutoff frequency)
-    highcut = highcut  # Hz (desired upper cutoff frequency)
+    lowcut = lowcut 
+    highcut = highcut 
     num_taps = 101
-    fir_filter = firwin(num_taps, highcut, pass_zero=True,scale=False, fs=fs, window='hamming')
+    fir_filter = firwin(num_taps, [lowcut, highcut], pass_zero=True,scale=False, fs=fs, window='hamming')
     filtered_signal = filtfilt(fir_filter , 1.0, data)
+
     return filtered_signal
 
 def shannon_entropy(signal_segment):
@@ -108,7 +114,7 @@ def feature_extraction(segment_duration,signal,sample_rate):
     
     return entropy_values,variance_values,std_values,sumofsquares_values,min_values,max_values
 
-def knn_interval(training_intervals_A, training_intervals_B, query_point, k):
+def knn_interval(training_intervals_A, training_intervals_B, query_point, k=5):
     distances_A = np.abs(training_intervals_A - query_point)
     distances_B = np.abs(training_intervals_B - query_point)
     
@@ -127,6 +133,7 @@ def knn_interval(training_intervals_A, training_intervals_B, query_point, k):
 def classification(nb,np,feature):
     predicted = []
     for i in range(len(feature)):
-        predicted_label = knn_interval(nb, np, feature[i], k=7) 
+        predicted_label = knn_interval(nb, np, feature[i], k=3) 
         predicted.append(predicted_label)
+    
     return predicted
